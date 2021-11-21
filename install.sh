@@ -369,7 +369,7 @@ function configureMailDev () {
 
 installNpm () {
   if [ ! -f "/usr/bin/npm" ]; then
-    apt install npm
+    apt install npm -y
   fi
 }
 
