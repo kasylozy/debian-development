@@ -367,6 +367,12 @@ function configureMailDev () {
   fi
 }
 
+installNpm () {
+  if [ ! -f "/usr/bin/npm" ]; then
+    apt install npm
+  fi
+}
+
 function installFinish () {
 	clear
 	echo ""
@@ -382,12 +388,6 @@ function installFinish () {
 	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
 	echo ""
 	echo ""
-}
-
-installNpm () {
-  if [ ! -f "/usr/bin/npm" ]; then
-    apt install npm
-  fi
 }
 
 main () {
