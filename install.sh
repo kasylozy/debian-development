@@ -366,6 +366,7 @@ function installFinish () {
 	echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
 	echo "Apache port 80"
 	echo "Nginx port 8080"
+	echo "Nginx SSL port 8081"
 	echo "Maildev port 1080"
 	echo "Username mysql : root"
 	echo "Password mysql : root"
