@@ -77,9 +77,6 @@ sslCertificateLocal () {
     openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
       -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local" \
       -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
-
-    a2ensite default-ssl
-    a2enmod ssl
   fi
 }
 
@@ -126,6 +123,8 @@ EOF
 </IfModule>
 EOF
     a2enmod rewrite
+    a2ensite default-ssl
+    a2enmod ssl
   fi
   systemctl stop apache2
 }
