@@ -4,7 +4,7 @@ set -e
 clear
 
 installRequirements () {
-  if [ ! -f "/usr/bin/wget" ]; then
+  if [ ! -f "/usr/bin/vim" ]; then
     apt install -y wget git open-vm-{tools,tools-desktop} vim man
   fi
 }
@@ -83,6 +83,32 @@ installApache2 () {
   </Directory>
 </VirtualHost>
 EOF
+
+    cat > /etc/apache2/sites-available/default-ssl.conf <<EOF
+<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+  ServerAdmin webmaster@localhost
+
+  DocumentRoot /var/www
+
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+  SSLEngine on
+  SSLCertificateFile      /etc/ssl/dev.local.cert
+  SSLCertificateKeyFile /etc/ssl/dev.local.key
+
+  <FilesMatch "\.(cgi|shtml|phtml|php)$">
+    SSLOptions +StdEnvVars
+  </FilesMatch>
+
+  <Directory /usr/lib/cgi-bin>
+    SSLOptions +StdEnvVars
+  </Directory>
+
+  </VirtualHost>
+</IfModule>
+EOF
     a2enmod rewrite
   fi
   systemctl stop apache2
@@ -133,7 +159,18 @@ http {
 EOF
 cat > /etc/nginx/conf.d/default.conf <<EOF
 server {
+  listen 8081;
+  server_name _;
+  return 301 https://\$host\$request_uri;
+}
+
+server {
   listen       8080;
+  listen 8081 default_server ssl;
+  ssl_certificate     /etc/ssl/dev.local.cert;
+  ssl_certificate_key /etc/ssl/dev.local.key;
+  ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
+  ssl_ciphers         HIGH:!aNULL:!MD5;
   server_name  localhost;
   root /var/www;
   index index.php index.html index.htm;
@@ -326,15 +363,17 @@ function installFinish () {
 
 sslCertificateLocal () {
   sslDirectory=/etc/ssl
-  openssl req -new -newkey rsa:4096 -nodes \
-    -keyout ${sslDirectory}/dev.local.key -out ${sslDirectory}/dev.local.csr \
-    -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=www.dev.local"
+  if [ ! -f "${sslDirectory}/dev.local.csr" ]; then
+    openssl req -new -newkey rsa:4096 -nodes \
+      -keyout ${sslDirectory}/dev.local.key -out ${sslDirectory}/dev.local.csr \
+      -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local"
 
-  openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
-    -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=www.dev.local" \
-    -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
+    openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+      -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local" \
+      -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
 
     a2ensite default-ssl
+  fi
 }
 
 main () {
