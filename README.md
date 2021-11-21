@@ -13,5 +13,7 @@ apt install wget -y; wget https://raw.githubusercontent.com/kasylozy/debian-deve
 
 ## Le script ne voit pas mon dossier partagé
 Deux raison peuvent être à l'origine
+
 1 : Vous avez mis le dossier partagé avant l'installation de debian, retournée dans share faites disabled OK, et réactivé le partage et OK attendé 3 secondes et relancé le script
+
 2 : Vous n'avez pas partagé de dossier, partagez-en un et relancé le script :)
