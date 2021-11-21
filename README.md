@@ -1,3 +1,6 @@
+# VM de developpement sur Debian
+
+wget, git, vim, apache2, nginx, PHP 7.4, Ruby, Composer, Mariadb, Postfix, Docker, MailDev, SSL 
 
 # Le lancement du script
 
