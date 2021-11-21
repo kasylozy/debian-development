@@ -367,6 +367,8 @@ function configureMailDev () {
   if ! docker ps | grep mail; then
 	  docker run -d --restart unless-stopped -p 1080:1080 -p 1025:1025 dominikserafin/maildev:latest
   fi
+  
+  exit 0
 }
 
 installNpm () {
