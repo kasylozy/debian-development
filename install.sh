@@ -362,13 +362,9 @@ function installDocker () {
 }
 
 function configureMailDev () {
-  dockerId=`docker ps | grep 'dominikserafin/maildev:latest' | awk '{ print $1 }'`
-  echo $dockerId
   if ! docker ps | grep mail; then
 	  docker run -d --restart unless-stopped -p 1080:1080 -p 1025:1025 dominikserafin/maildev:latest
   fi
-  
-  exit 0
 }
 
 installNpm () {
