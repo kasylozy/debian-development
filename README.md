@@ -1,4 +1,4 @@
-# VM de developpement sur Debian
+# VM Vmware de developpement sur Debian 11
 
 wget, git, vim, apache2, nginx, PHP 7.4, Ruby, Composer, Mariadb, Postfix, Docker, MailDev, SSL 
 
