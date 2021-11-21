@@ -47,11 +47,11 @@ syncSharedDirectory () {
       exit 0
     else
       if [ "${SHAREDCHOICE}" -le "${indexCount}" ]; then
-	rm -Rf ${directoryWeb}
-	ln -s /mnt/hgfs/${indexShareDirectory[$SHAREDCHOICE]} ${directoryWeb}
+        rm -Rf ${directoryWeb}
+        ln -s /mnt/hgfs/${indexShareDirectory[$SHAREDCHOICE]} ${directoryWeb}
       else
-	syncSharedDirectory
-	exit 0
+        syncSharedDirectory
+        exit 0
       fi
     fi
   else
@@ -334,4 +334,3 @@ main () {
 }
 
 main
-
