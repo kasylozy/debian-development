@@ -21,6 +21,14 @@ sharedMissingFolders () {
   exit 0
 }
 
+endScriptErrorSharedFolders () {
+  clear
+  echo -e "Le script ces arrêté puis que le dossier demander n'existe pas
+Vérifié la saisie et relancé le script de nouveau
+"
+exit 0
+}
+
 syncSharedDirectory () {
   directoryWeb=/var/www
   directoryShared=`ls /mnt/ | wc -l`
@@ -43,15 +51,13 @@ syncSharedDirectory () {
 
     read -p "Entrez le numéro du dossier web : " SHAREDCHOICE
     if ! echo $SHAREDCHOICE | grep -x -E '[[:digit:]]+' &>/dev/null; then
-      syncSharedDirectory
-      exit 0
+      endScriptErrorSharedFolders
     else
       if [ "${SHAREDCHOICE}" -le "${indexCount}" ]; then
         rm -Rf ${directoryWeb}
         ln -s /mnt/hgfs/${indexShareDirectory[$SHAREDCHOICE]} ${directoryWeb}
       else
-        syncSharedDirectory
-        exit 0
+        endScriptErrorSharedFolders
       fi
     fi
   else
