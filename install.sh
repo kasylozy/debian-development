@@ -6,6 +6,7 @@ clear
 installRequirements () {
   if [ ! -f "/usr/bin/vim" ]; then
     apt install -y wget git open-vm-{tools,tools-desktop} vim man
+    sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/" /etc/ssh/sshd_config
   fi
 }
 
