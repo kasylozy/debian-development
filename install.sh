@@ -335,7 +335,8 @@ main () {
   installComposer
   installMariadb
   installPostfix
-  configureMailDev installDocker
+  installDocker
+  configureMailDev
   installFinish
 }
 
