@@ -207,10 +207,10 @@ installPhp () {
 		sed -i "s/error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT/error_reporting = E_ALL/" ${file}
 		sed -i "s/display_errors = Off/display_errors = On/" ${file}
 		sed -i "s/display_startup_errors = Off/display_startup_errors = On/" ${file}
-		#sed -i "s/log_errors = On/log_errors = Off/" ${file}
+		sed -i "s/log_errors = On/log_errors = Off/" ${file}
 		sed -i "s/post_max_size = 8M/post_max_size = 8G/" ${file}
 		sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 8G/" ${file}
-		sed -i "s/;extension=/extension=/" ${file}
+		#sed -i "s/;extension=/extension=/" ${file}
 	done
 }
 
