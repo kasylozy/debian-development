@@ -324,6 +324,19 @@ function installFinish () {
 	echo ""
 }
 
+sslCertificateLocal () {
+  sslDirectory=/etc/ssl
+  openssl req -new -newkey rsa:4096 -nodes \
+    -keyout ${sslDirectory}/dev.local.key -out ${sslDirectory}/dev.local.csr \
+    -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=www.dev.local"
+
+  openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+    -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=www.dev.local" \
+    -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
+
+    a2ensite default-ssl
+}
+
 main () {
   installRequirements
   addLineSharedFstab
@@ -337,6 +350,7 @@ main () {
   installPostfix
   installDocker
   configureMailDev
+  sslCertificateLocal
   installFinish
 }
 
