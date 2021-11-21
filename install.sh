@@ -376,7 +376,7 @@ function installFinish () {
 	echo "Nginx SSL port 8081"
 	echo "Maildev port 1080"
 	echo "Username mysql : root"
-	echo "Password mysql : root"
+	echo "Password mysql : Aucun laissez vide"
 	echo ""
 	echo "Votre ip public:"
 	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
