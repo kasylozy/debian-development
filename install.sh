@@ -67,6 +67,21 @@ syncSharedDirectory () {
   fi
 }
 
+sslCertificateLocal () {
+  sslDirectory=/etc/ssl
+  if [ ! -f "${sslDirectory}/dev.local.csr" ]; then
+    openssl req -new -newkey rsa:4096 -nodes \
+      -keyout ${sslDirectory}/dev.local.key -out ${sslDirectory}/dev.local.csr \
+      -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local"
+
+    openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+      -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local" \
+      -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
+
+    a2ensite default-ssl
+  fi
+}
+
 installApache2 () {
   if [ ! -d "/etc/apache2" ]; then
     apt install apache2 -y
@@ -361,25 +376,11 @@ function installFinish () {
 	echo ""
 }
 
-sslCertificateLocal () {
-  sslDirectory=/etc/ssl
-  if [ ! -f "${sslDirectory}/dev.local.csr" ]; then
-    openssl req -new -newkey rsa:4096 -nodes \
-      -keyout ${sslDirectory}/dev.local.key -out ${sslDirectory}/dev.local.csr \
-      -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local"
-
-    openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
-      -subj "/C=FR/ST=kasylozy/L=Montpelier/O=Dis/CN=dev.local" \
-      -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
-
-    a2ensite default-ssl
-  fi
-}
-
 main () {
   installRequirements
   addLineSharedFstab
   syncSharedDirectory
+  sslCertificateLocal
   installApache2
   installNginx
   installPhp
@@ -389,7 +390,6 @@ main () {
   installPostfix
   installDocker
   configureMailDev
-  sslCertificateLocal
   installFinish
 }
 
