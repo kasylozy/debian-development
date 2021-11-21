@@ -300,7 +300,7 @@ function installMariadb () {
   if [ -z "${check}" ]; then
     mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
 		systemctl enable --now mariadb
-		mysql -uroot -proot -e "create user root@'%' identified by 'root';"
+		mysql -uroot -proot -e "create user root@'%' identified by '';"
 		mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
   fi
 	
