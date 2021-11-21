@@ -79,6 +79,7 @@ sslCertificateLocal () {
       -keyout ${sslDirectory}/dev.local.key  -out ${sslDirectory}/dev.local.cert
 
     a2ensite default-ssl
+    a2enmod ssl
   fi
 }
 
