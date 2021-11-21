@@ -384,6 +384,12 @@ function installFinish () {
 	echo ""
 }
 
+installNpm () {
+  if [ ! -f "/usr/bin/npm" ]; then
+    apt install npm
+  fi
+}
+
 main () {
   configurationSSH
   installRequirements
@@ -399,6 +405,7 @@ main () {
   installPostfix
   installDocker
   configureMailDev
+  installNpm
   installFinish
 }
 
