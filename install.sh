@@ -150,7 +150,12 @@ server {
 }
 EOF
   fi
+
+  systemctl restart apache2
+  systemctl restart nginx
 }
+
+
 
 installPhp () {
   if [ ! -d "/etc/php" ]; then
@@ -209,6 +214,111 @@ installPhp () {
 	done
 }
 
+function installRuby () {
+	if [ ! -f "/usr/bin/ruby" ]; then
+		apt install -y ruby-full
+	fi
+}
+
+function installComposer () {
+  composerDirectory=/usr/local/bin/composer  
+	if [ ! -f "${composerDirectory}" ]; then
+		wget https://getcomposer.org/download/2.1.12/composer.phar
+		mv composer.phar ${composerDirectory}
+		chmod 777 ${composerDirectory}
+	fi
+}
+
+function installMariadb () {
+	if [ ! -f "/usr/bin/mysql" ]; then
+		apt install -y mariadb-server mariadb-client
+	fi
+	
+	mariadbCheck=`systemctl is-enabled mariadb`
+	if [ "${mariadbCheck}" = "disabled" ]; then
+		mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
+		systemctl enable --now mariadb
+		mysql -uroot -proot -e "create user root@'%' identified by 'root';"
+		mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
+		mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
+	fi
+	
+	sed -i "s/127\.0\.0\.1/0\.0\.0\.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
+
+	systemctl restart mariadb
+}
+
+function installPostfix () {
+  postfixConfig=/etc/postfix/main.cf
+  if [ ! -f "${postfixConfig}" ]; then
+	  DEBIAN_FRONTEND=noninteractive apt-get -y install postfix
+cat > ${postfixConfig} <<EOF
+smtpd_banner = $myhostname ESMTP $mail_name (Debian/GNU)
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+compatibility_level = 2
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_tls_security_level=may
+smtp_tls_CApath=/etc/ssl/certs
+smtp_tls_security_level=may
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination
+myhostname = debian.localdomain
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+mydestination = $myhostname, debian, localhost.localdomain, , localhost
+relayhost = 0.0.0.0:1025
+mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
+mailbox_size_limit = 0
+recipient_delimiter = +
+inet_interfaces = loopback-only
+inet_protocols = all
+EOF
+    systemctl restart postfix
+  fi
+}
+
+function installDocker () {
+	if [ ! -d "/etc/docker" ]; then
+		apt update
+		apt-get install \
+			ca-certificates \
+			curl \
+			gnupg \
+			lsb-release -y
+		curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+		echo \
+		"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+		$(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+		apt-get update
+		apt-get install docker-ce docker-ce-cli containerd.io -y
+	fi
+}
+
+function configureMailDev () {
+  if ! docker ps | grep mail; then
+	  docker run -d -p 1080:1080 -p 1025:1025 dominikserafin/maildev:latest
+  fi
+}
+
+function installFinish () {
+	clear
+	echo ""
+	echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
+	echo "Apache port 80"
+	echo "Nginx port 8080"
+	echo "Maildev port 1080"
+	echo "Username mysql : root"
+	echo "Password mysql : root"
+	echo ""
+	echo "Votre ip public:"
+	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
+	echo ""
+	echo ""
+}
+
 main () {
   installRequirements
   addLineSharedFstab
@@ -216,6 +326,12 @@ main () {
   installApache2
   installNginx
   installPhp
+  installRuby
+  installComposer
+  installMariadb
+  installPostfix
+  configureMailDev installDocker
+  installFinish
 }
 
 main
