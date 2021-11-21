@@ -234,14 +234,13 @@ function installMariadb () {
 		apt install -y mariadb-server mariadb-client
 	fi
 	
-	mariadbCheck=`systemctl is-enabled mariadb`
-	if [ "${mariadbCheck}" = "disabled" ]; then
-		mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
+  check=`mysql -uroot -proot -e "select host from mysql.user where user='root' and host='%';"`
+  if [ -z "${check}" ]; then
+    mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
 		systemctl enable --now mariadb
 		mysql -uroot -proot -e "create user root@'%' identified by 'root';"
 		mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
-		mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
-	fi
+  fi
 	
 	sed -i "s/127\.0\.0\.1/0\.0\.0\.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
 
