@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+clear
+
 installRequirements () {
   if [ ! -f "/usr/bin/wget" ]; then
     apt install -y wget git open-vm-{tools,tools-desktop} vim man
@@ -59,10 +61,161 @@ syncSharedDirectory () {
   fi
 }
 
+installApache2 () {
+  if [ ! -d "/etc/apache2" ]; then
+    apt install apache2 -y
+    cat > /etc/apache2/sites-available/000-default.conf <<EOF
+<VirtualHost *:80>
+  #ServerName www.example.com
+  ServerAdmin webmaster@localhost
+  DocumentRoot /var/www
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+  <Directory /var/www>
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+  </Directory>
+</VirtualHost>
+EOF
+    a2enmod rewrite
+  fi
+  systemctl stop apache2
+}
+
+installNginx () {
+  if [ ! -d "/etc/nginx" ]; then
+    apt install curl gnupg2 ca-certificates lsb-release debian-archive-keyring -y
+    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+      | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+    http://nginx.org/packages/debian `lsb_release -cs` nginx" \
+      | tee /etc/apt/sources.list.d/nginx.list &>/dev/null
+    apt update
+    apt install nginx -y
+    cat > /etc/nginx/nginx.conf <<EOF
+user  www-data;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '\$remote_addr - \$remote_user [$time_local] "\$request" '
+                      '\$status $body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    client_max_body_size 2G;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+EOF
+cat > /etc/nginx/conf.d/default.conf <<EOF
+server {
+  listen       8080;
+  server_name  localhost;
+  root /var/www;
+  index index.php index.html index.htm;
+  autoindex on;
+  location / {
+    try_files \$uri \$uri/ /index.php?\$args;
+  }
+
+  location ~ \.php$ {
+    try_files \$uri =404;
+    fastcgi_pass unix:/run/php/php7.4-fpm.sock;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    include fastcgi_params;
+  }
+
+  location ~ /\.ht {
+    deny  all;
+  }
+}
+EOF
+  fi
+}
+
+installPhp () {
+  if [ ! -d "/etc/php" ]; then
+    apt install -y \
+      libapache2-mod-php7.4 \
+      libphp7.4-embed \
+      php7.4 \
+      php-zmq \
+      php7.4-bcmath \
+      php7.4-bz2 \
+      php7.4-cgi \
+      php7.4-cli \
+      php7.4-common \
+      php7.4-curl \
+      php7.4-dba \
+      php7.4-enchant \
+      php7.4-fpm \
+      php7.4-gd \
+      php7.4-gmp \
+      php7.4-imap \
+      php7.4-interbase \
+      php7.4-intl \
+      php7.4-json \
+      php7.4-ldap \
+      php7.4-mbstring \
+      php7.4-mysql \
+      php7.4-odbc \
+      php7.4-opcache \
+      php7.4-pgsql \
+      php7.4-phpdbg \
+      php7.4-pspell \
+      php7.4-readline \
+      php7.4-snmp \
+      php7.4-soap \
+      php7.4-sqlite3 \
+      php7.4-sybase \
+      php7.4-tidy \
+      php7.4-xml \
+      php7.4-xmlrpc \
+      php7.4-xsl \
+      php7.4-zip \
+      php-xdebug
+
+    a2enmod rewrite
+    a2enmod php7.4
+    systemctl restart apache2
+  fi
+  for file in `find /etc/php -type f -name "php.ini"`; do
+		sed -i "s/error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT/error_reporting = E_ALL/" ${file}
+		sed -i "s/display_errors = Off/display_errors = On/" ${file}
+		sed -i "s/display_startup_errors = Off/display_startup_errors = On/" ${file}
+		#sed -i "s/log_errors = On/log_errors = Off/" ${file}
+		sed -i "s/post_max_size = 8M/post_max_size = 8G/" ${file}
+		sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 8G/" ${file}
+		sed -i "s/;extension=/extension=/" ${file}
+	done
+}
+
 main () {
   installRequirements
   addLineSharedFstab
   syncSharedDirectory
+  installApache2
+  installNginx
+  installPhp
 }
 
 main
