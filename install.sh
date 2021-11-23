@@ -144,6 +144,10 @@ installNginx () {
     echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
     http://nginx.org/packages/debian `lsb_release -cs` nginx" \
       | tee /etc/apt/sources.list.d/nginx.list &>/dev/null
+    
+    curl -sSL https://packages.sury.org/nginx-mainline/README.txt | bash -x
+    curl -sSL https://packages.sury.org/nginx/README.txt | bash -x
+    
     apt update
     apt install nginx -y
     cat > /etc/nginx/nginx.conf <<EOF
@@ -214,6 +218,11 @@ server {
   }
 }
 EOF
+  else
+    curl -sSL https://packages.sury.org/nginx-mainline/README.txt | bash -x
+    curl -sSL https://packages.sury.org/nginx/README.txt | bash -x
+    apt update
+    apt full-upgrade -y
   fi
 
   systemctl restart apache2
