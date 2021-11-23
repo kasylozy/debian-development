@@ -138,7 +138,7 @@ EOF
 
 installNginx () {
   if [ ! -d "/etc/nginx" ]; then
-    apt install -y ca-certificates apt-transport-https curl gnupg2 lsb-release debian-archive-keyring
+    apt install -y ca-certificates apt-transport-https curl gnupg gnupg1 gnupg2 lsb-release debian-archive-keyring
     wget -q https://packages.sury.org/nginx/apt.gpg -O- | apt-key add -
     echo "deb https://packages.sury.org/nginx/ stretch main" | tee /etc/apt/sources.list.d/nginx.list
     apt update && apt install nginx-full -y
