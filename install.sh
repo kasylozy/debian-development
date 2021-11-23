@@ -268,7 +268,6 @@ installPhp () {
       php7.4-zip \
       php-xdebug
 
-    a2enmod rewrite
     a2enmod php7.4
     systemctl restart apache2
   fi
