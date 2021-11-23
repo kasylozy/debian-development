@@ -303,7 +303,7 @@ function installMariadb () {
 	if [ ! -f "/usr/bin/mysql" ]; then
 		apt install -y mariadb-server mariadb-client
 	else
-		apt-get install software-properties-common dirmngr apt-transport-https -y
+		apt-get install -y software-properties-common dirmngr apt-transport-https
 		apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
 		add-apt-repository 'deb [arch=amd64,i386,arm64,ppc64el] https://ftp.osuosl.org/pub/mariadb/repo/10.6/debian bullseye main'
 		apt-get update
