@@ -218,11 +218,6 @@ server {
   }
 }
 EOF
-  else
-    curl -sSL https://packages.sury.org/nginx-mainline/README.txt | bash -x
-    curl -sSL https://packages.sury.org/nginx/README.txt | bash -x
-    apt update
-    apt full-upgrade -y
   fi
 
   systemctl restart apache2
