@@ -138,11 +138,15 @@ EOF
 
 installNginx () {
   if [ ! -d "/etc/nginx" ]; then
-    apt install -y ca-certificates apt-transport-https curl gnupg gnupg1 gnupg2 lsb-release debian-archive-keyring
-    wget -q https://packages.sury.org/nginx/apt.gpg -O- | apt-key add -
-    echo "deb https://packages.sury.org/nginx/ stretch main" | tee /etc/apt/sources.list.d/nginx.list
-    apt update && apt install nginx-full -y
-    
+    apt install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring
+    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+    | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+      http://nginx.org/packages/mainline/debian `lsb_release -cs` nginx" \
+      | tee /etc/apt/sources.list.d/nginx.list
+    apt update
+    apt install nginx -y
+
     cat > /etc/nginx/nginx.conf <<EOF
 user  www-data;
 worker_processes  auto;
