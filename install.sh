@@ -258,6 +258,7 @@ installPhp () {
 installApache2 () {
   if [ ! -d "/etc/apache2" ]; then
     apt install apache2 -y
+    rm -Rf /var/www/html
     cat > /etc/apache2/sites-available/000-default.conf <<EOF
 <VirtualHost *:80>
   #ServerName www.example.com
