@@ -3,21 +3,45 @@ set -e
 
 clear
 
-configurationSSH () {
+configurationSSH ()
+{
+  if grep "PermitRootLogin prohibit-password" /etc/ssh/sshd_config &>/dev/null;
+  then
     sed -i "s/#PermitRootLogin prohibit-password/PermitRootLogin yes/" /etc/ssh/sshd_config
-    sed -i "s/#PermitEmptyPasswords no/PermitEmptyPasswords yes/" /etc/ssh/sshd_config
-    passwd root -d
     systemctl restart sshd
+  fi
 }
 
-installRequirements () {
-  if [ ! -f "/usr/bin/vim" ]; then
-    apt install -y wget git open-vm-{tools,tools-desktop} vim man
+installRequirements ()
+{
+  if [ ! -f /etc/wgetrc ];
+  then
+    apt install -y wget
+  fi 
+
+  if [ ! -f /usr/bin/git ];
+  then
+    apt install -y git
+  fi
+
+  if [ ! -f /usr/bin/man ];
+  then
+    apt install -y man
+  fi
+}
+
+configureVim ()
+{
+  if ! grep -i "set number" /etc/vim/vimrc &>/dev/null;
+  then
+    apt install -y vim
+    echo "set number" >> /etc/vim/vimrc
   fi
 }
 
 addLineSharedFstab () {
   if ! grep -q ".host:/" /etc/fstab; then
+    apt install -y open-vm-{tools,tools-desktop}
     echo ".host:/ /mnt/hgfs       fuse.vmhgfs-fuse        auto,allow_other        0       0" >> /etc/fstab
   fi
 }
@@ -87,144 +111,8 @@ sslCertificateLocal () {
   fi
 }
 
-installApache2 () {
-  if [ ! -d "/etc/apache2" ]; then
-    apt install apache2 -y
-    cat > /etc/apache2/sites-available/000-default.conf <<EOF
-<VirtualHost *:80>
-  #ServerName www.example.com
-  ServerAdmin webmaster@localhost
-  DocumentRoot /var/www
-  ErrorLog ${APACHE_LOG_DIR}/error.log
-  CustomLog ${APACHE_LOG_DIR}/access.log combined
-  <Directory /var/www>
-    Options +Indexes +FollowSymLinks
-    AllowOverride All
-  </Directory>
-</VirtualHost>
-EOF
-
-    cat > /etc/apache2/sites-available/default-ssl.conf <<EOF
-<IfModule mod_ssl.c>
-  <VirtualHost _default_:443>
-  ServerAdmin webmaster@localhost
-
-  DocumentRoot /var/www
-
-  ErrorLog ${APACHE_LOG_DIR}/error.log
-  CustomLog ${APACHE_LOG_DIR}/access.log combined
-
-  SSLEngine on
-  SSLCertificateFile      /etc/ssl/dev.local.cert
-  SSLCertificateKeyFile /etc/ssl/dev.local.key
-
-  <FilesMatch "\.(cgi|shtml|phtml|php)$">
-    SSLOptions +StdEnvVars
-  </FilesMatch>
-
-  <Directory /usr/lib/cgi-bin>
-    SSLOptions +StdEnvVars
-  </Directory>
-
-  </VirtualHost>
-</IfModule>
-EOF
-    a2enmod rewrite
-    a2ensite default-ssl
-    a2enmod ssl
-  fi
-  systemctl stop apache2
-}
-
-installNginx () {
-  if [ ! -d "/etc/nginx" ]; then
-    apt install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring
-    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
-    | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
-    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
-      http://nginx.org/packages/mainline/debian `lsb_release -cs` nginx" \
-      | tee /etc/apt/sources.list.d/nginx.list
-    apt update
-    apt install nginx -y
-
-    cat > /etc/nginx/nginx.conf <<EOF
-user  www-data;
-worker_processes  auto;
-
-error_log  /var/log/nginx/error.log notice;
-pid        /var/run/nginx.pid;
-
-events {
-    worker_connections  1024;
-}
-
-http {
-    include       /etc/nginx/mime.types;
-    default_type  application/octet-stream;
-
-    log_format  main  '\$remote_addr - \$remote_user [$time_local] "\$request" '
-                      '\$status $body_bytes_sent "\$http_referer" '
-                      '"\$http_user_agent" "\$http_x_forwarded_for"';
-
-    access_log  /var/log/nginx/access.log  main;
-
-    client_max_body_size 2G;
-
-    sendfile        on;
-    #tcp_nopush     on;
-
-    keepalive_timeout  65;
-
-    #gzip  on;
-
-    include /etc/nginx/conf.d/*.conf;
-}
-EOF
-cat > /etc/nginx/conf.d/default.conf <<EOF
-server {
-  listen 8081;
-  server_name _;
-  return 301 https://\$host\$request_uri;
-}
-
-server {
-  listen       8080;
-  listen 8081 default_server ssl;
-  ssl_certificate     /etc/ssl/dev.local.cert;
-  ssl_certificate_key /etc/ssl/dev.local.key;
-  ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
-  ssl_ciphers         HIGH:!aNULL:!MD5;
-  server_name  localhost;
-  root /var/www;
-  index index.php index.html index.htm;
-  autoindex on;
-  location / {
-    try_files \$uri \$uri/ /index.php?\$args;
-  }
-
-  location ~ \.php$ {
-    try_files \$uri =404;
-    fastcgi_pass unix:/run/php/php7.4-fpm.sock;
-    fastcgi_index index.php;
-    fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
-    include fastcgi_params;
-  }
-
-  location ~ /\.ht {
-    deny  all;
-  }
-}
-EOF
-  fi
-
-  systemctl restart apache2
-  systemctl restart nginx
-}
-
-
-
 installPhp () {
-  if [ ! -d "/etc/php" ]; then
+  if [ ! -d /etc/php/7.4/ ] ; then
     apt install -y \
       libapache2-mod-php7.4 \
       libphp7.4-embed \
@@ -265,9 +153,97 @@ installPhp () {
       php7.4-zip \
       php-xdebug
 
-    a2enmod php7.4
     systemctl restart apache2
   fi
+
+  if [ ! -d /etc/php/8.1 ];then
+   apt-get install ca-certificates apt-transport-https software-properties-common wget curl lsb-release -y
+   curl -sSL https://packages.sury.org/php/README.txt | bash -x  &>/dev/null
+   apt update
+   apt full-upgrade
+   apt install -y php8.1-fpm \
+	libapache2-mod-fcgid \
+	libapache2-mod-php8.1 \
+	libphp8.1-embed \
+	php8.1 \
+	php8.1-amqp \
+	php8.1-apcu \
+	php8.1-ast \
+	php8.1-bcmath \
+	php8.1-bz2 \
+	php8.1-cgi \
+	php8.1-cli \
+	php8.1-common \
+	php8.1-curl \
+	php8.1-dba \
+	php8.1-decimal \
+	php8.1-dev \
+	php8.1-ds \
+	php8.1-enchant \
+	php8.1-fpm \
+	php8.1-gd \
+	php8.1-gearman \
+	php8.1-gmp \
+	php8.1-gnupg \
+	php8.1-grpc \
+	php8.1-http \
+	php8.1-igbinary \
+	php8.1-imagick \
+	php8.1-imap \
+	php8.1-inotify \
+	php8.1-interbase \
+	php8.1-intl \
+	php8.1-ldap \
+	php8.1-lz4 \
+	php8.1-mailparse \
+	php8.1-maxminddb \
+	php8.1-mbstring \
+	php8.1-mcrypt \
+	php8.1-memcache \
+	php8.1-memcached \
+	php8.1-mongodb \
+	php8.1-msgpack \
+	php8.1-mysql \
+	php8.1-oauth \
+	php8.1-odbc \
+	php8.1-opcache \
+	php8.1-pcov \
+	php8.1-pgsql \
+	php8.1-phpdbg \
+	php8.1-ps \
+	php8.1-pspell \
+	php8.1-psr \
+	php8.1-raphf \
+	php8.1-readline \
+	php8.1-redis \
+	php8.1-rrd \
+	php8.1-smbclient \
+	php8.1-snmp \
+	php8.1-soap \
+	php8.1-sqlite3 \
+	php8.1-ssh2 \
+	php8.1-swoole \
+	php8.1-sybase \
+	php8.1-tidy \
+	php8.1-uopz \
+	php8.1-uploadprogress \
+	php8.1-uuid \
+	php8.1-vips \
+	php8.1-xdebug \
+	php8.1-xhprof \
+	php8.1-xml \
+	php8.1-xmlrpc \
+	php8.1-xsl \
+	php8.1-yac \
+	php8.1-yaml \
+	php8.1-zip \
+	php8.1-zmq \
+	php8.1-zstd \
+
+   a2enmod proxy_fcgi setenvif && a2enconf php8.1-fpm
+   systemctl restart apache2
+  fi
+
   for file in `find /etc/php -type f -name "php.ini"`; do
 		sed -i "s/error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT/error_reporting = E_ALL/" ${file}
 		sed -i "s/display_errors = Off/display_errors = On/" ${file}
@@ -279,41 +255,159 @@ installPhp () {
 	done
 }
 
-function installRuby () {
-	if [ ! -f "/usr/bin/ruby" ]; then
-		apt install -y ruby-full
-	fi
+installApache2 () {
+  if [ ! -d "/etc/apache2" ]; then
+    apt install apache2 -y
+    cat > /etc/apache2/sites-available/000-default.conf <<EOF
+<VirtualHost *:80>
+  #ServerName www.example.com
+  ServerAdmin webmaster@localhost
+  DocumentRoot /var/www
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+  <Directory /var/www>
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+  </Directory>
+</VirtualHost>
+EOF
+
+    cat > /etc/apache2/sites-available/default-ssl.conf <<EOF
+<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+  ServerAdmin webmaster@localhost
+  DocumentRoot /var/www
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+  SSLEngine on
+  SSLCertificateFile      /etc/ssl/dev.local.cert
+  SSLCertificateKeyFile /etc/ssl/dev.local.key
+  <FilesMatch "\.(cgi|shtml|phtml|php)$">
+    SSLOptions +StdEnvVars
+  </FilesMatch>
+  <Directory /usr/lib/cgi-bin>
+    SSLOptions +StdEnvVars
+  </Directory>
+  </VirtualHost>
+</IfModule>
+EOF
+    a2enmod rewrite
+    a2ensite default-ssl
+    a2enmod ssl
+  fi
+  systemctl stop apache2
 }
 
-function installComposer () {
-  composerDirectory=/usr/local/bin/composer  
-	if [ ! -f "${composerDirectory}" ]; then
-		wget https://getcomposer.org/download/2.1.12/composer.phar
-		mv composer.phar ${composerDirectory}
-		chmod 777 ${composerDirectory}
-	fi
+installNginx () {
+  if [ ! -d "/etc/nginx" ]; then
+    apt install -y curl gnupg2 ca-certificates lsb-release debian-archive-keyring
+    curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+    | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+    echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
+      http://nginx.org/packages/mainline/debian `lsb_release -cs` nginx" \
+      | tee /etc/apt/sources.list.d/nginx.list
+    apt update
+    apt install nginx -y
+
+    cat > /etc/nginx/nginx.conf <<EOF
+user  www-data;
+worker_processes  auto;
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+events {
+    worker_connections  1024;
+}
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+    log_format  main  '\$remote_addr - \$remote_user [$time_local] "\$request" '
+                      '\$status $body_bytes_sent "\$http_referer" '
+                      '"\$http_user_agent" "\$http_x_forwarded_for"';
+    access_log  /var/log/nginx/access.log  main;
+    client_max_body_size 2G;
+    sendfile        on;
+    #tcp_nopush     on;
+    keepalive_timeout  65;
+    #gzip  on;
+    include /etc/nginx/conf.d/*.conf;
+}
+EOF
+cat > /etc/nginx/conf.d/default.conf <<EOF
+server {
+  listen 8081;
+  server_name _;
+  return 301 https://\$host\$request_uri;
+}
+server {
+  listen       8080;
+  listen 8081 default_server ssl;
+  ssl_certificate     /etc/ssl/dev.local.cert;
+  ssl_certificate_key /etc/ssl/dev.local.key;
+  ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
+  ssl_ciphers         HIGH:!aNULL:!MD5;
+  server_name  localhost;
+  root /var/www;
+  index index.php index.html index.htm;
+  autoindex on;
+  location / {
+    try_files \$uri \$uri/ /index.php?\$args;
+  }
+  location ~ \.php$ {
+    try_files \$uri =404;
+    fastcgi_pass unix:/run/php/php8.1-fpm.sock;
+    fastcgi_index index.php;
+    fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+    include fastcgi_params;
+  }
+  location ~ /\.ht {
+    deny  all;
+  }
+}
+EOF
+  fi
+
+  systemctl restart apache2
+  systemctl restart nginx
 }
 
-function installMariadb () {
-	if [ ! -f "/usr/bin/mysql" ]; then
-		apt-get install -y software-properties-common dirmngr apt-transport-https
-		apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
-		add-apt-repository 'deb [arch=amd64,i386,arm64,ppc64el] https://ftp.osuosl.org/pub/mariadb/repo/10.6/debian bullseye main'
-		apt-get update
-		apt install -y mariadb-server mariadb-client
-	fi
+installRuby ()
+{
+  if [ ! -f "/usr/bin/ruby" ]; then
+    apt install -y ruby-full
+  fi
+}
+
+function installComposer () 
+{
+  composerDirectory=/usr/local/bin/composer
+  if [ ! -f "${composerDirectory}" ]; then
+    wget https://getcomposer.org/download/2.1.12/composer.phar
+    mv composer.phar ${composerDirectory}
+    chmod 777 ${composerDirectory}
+  fi
+}
+
+function installMariadb () 
+{
+  if [ ! -f "/usr/bin/mysql" ]; then
+    curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
+    apt-get install software-properties-common
+    add-apt-repository 'deb [arch=amd64,arm64,ppc64el] http://sfo1.mirrors.digitalocean.com/mariadb/repo/10.3/ubuntu bionic main'
+    apt update
+    apt install -y mariadb-{server,client,backup,common}
+  fi
 	
   check=`mysql -uroot -proot -e "select host from mysql.user where user='root' and host='%';"`
   if [ -z "${check}" ]; then
     mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
-		systemctl enable --now mariadb
-		mysql -uroot -proot -e "create user root@'%' identified by '';"
-		mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
+    systemctl enable --now mariadb
+    mysql -uroot -proot -e "create user root@'%' identified by 'root';"
+    mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
   fi
 	
-	sed -i "s/127\.0\.0\.1/0\.0\.0\.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
+  sed -i "s/127\.0\.0\.1/0\.0\.0\.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
 
-	systemctl restart mariadb
+  systemctl restart mariadb
 }
 
 function installPostfix () {
@@ -377,7 +471,8 @@ installNpm () {
   fi
 }
 
-function installFinish () {
+function installFinished () 
+{
 	clear
 	echo ""
 	echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
@@ -386,7 +481,7 @@ function installFinish () {
 	echo "Nginx SSL port 8081"
 	echo "Maildev port 1080"
 	echo "Username mysql : root"
-	echo "Password mysql : Aucun laissez vide"
+	echo "Password mysql : root"
 	echo ""
 	echo "Votre ip public:"
 	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
@@ -394,15 +489,17 @@ function installFinish () {
 	echo ""
 }
 
-main () {
+main ()
+{
   configurationSSH
   installRequirements
+  configureVim
   addLineSharedFstab
   syncSharedDirectory
   sslCertificateLocal
+  installPhp
   installApache2
   installNginx
-  installPhp
   installRuby
   installComposer
   installMariadb
@@ -410,7 +507,8 @@ main () {
   installDocker
   configureMailDev
   installNpm
-  installFinish
+  installFinished
 }
 
 main
+
