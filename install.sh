@@ -159,15 +159,13 @@ installPhp () {
   if [ ! -d /etc/php/8.1 ];then
    apt-get install ca-certificates apt-transport-https software-properties-common wget curl lsb-release -y
    curl -sSL https://packages.sury.org/php/README.txt | bash -x  &>/dev/null
-   apt update
-   apt full-upgrade
+   apt update -y && apt full-upgrade -y
    apt install -y php8.1-fpm \
 	libapache2-mod-fcgid \
 	libapache2-mod-php8.1 \
 	libphp8.1-embed \
 	php8.1 \
 	php8.1-amqp \
-	php8.1-apcu \
 	php8.1-ast \
 	php8.1-bcmath \
 	php8.1-bz2 \
@@ -392,12 +390,12 @@ function installMariadb ()
 {
   if [ ! -f "/usr/bin/mysql" ]; then
     curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
-    apt-get install software-properties-common
+    apt-get install -y software-properties-common
     add-apt-repository 'deb [arch=amd64,arm64,ppc64el] http://sfo1.mirrors.digitalocean.com/mariadb/repo/10.3/ubuntu bionic main'
     apt update
     apt install -y mariadb-{server,client,backup,common}
   fi
-	
+
   check=`mysql -uroot -proot -e "select host from mysql.user where user='root' and host='%';"`
   if [ -z "${check}" ]; then
     mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
