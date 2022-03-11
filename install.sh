@@ -546,6 +546,7 @@ main ()
   configureMailDev
   installNpm
   installFinished
+  configureChangePhp
 }
 
 main
