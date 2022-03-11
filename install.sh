@@ -21,7 +21,11 @@ installRequirements ()
 
   if [ ! -f /usr/bin/git ];
   then
-    apt install -y git
+    ap
+
+  if [ ! -f /usr/bin/htop ];
+  then
+    apt install -y htop
   fi
 
   if [ ! -f /usr/bin/man ];
