@@ -488,6 +488,7 @@ case \$PHPCHOICE in
     a2dismod php8.1 &>/dev/null
     a2enmod php7.4 &>/dev/null
     systemctl restart nginx
+    systemctl restart apache2
     echo "PHP 7.4 est maintenant activé sur apache nginx et en cli"
   ;;
   2)
@@ -495,6 +496,7 @@ case \$PHPCHOICE in
     a2dismod php7.4 &>/dev/null
     a2enmod php8.1 &>/dev/null
     systemctl restart nginx
+    systemctl restart apache2
     echo "PHP 8.1 est maintenant activé sur apache nginx et en cli"
   ;;
   "q"|"Q")
