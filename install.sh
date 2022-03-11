@@ -470,6 +470,41 @@ installNpm () {
   fi
 }
 
+configureChangePhp ()
+{
+  cat > /usr/local/bin/changephp <<EOF
+#!/bin/bash
+
+read -p "Pour quel version de php voulez-vous changer ?
+1 : PHP 7.4
+2 : PHP 8.1
+q : Ne pas changer de version
+Entrez votre choix : " PHPCHOICE
+
+nginxFile=/etc/nginx/conf.d/default.conf
+case \$PHPCHOICE in
+  1)
+    sed -i "s/php8.1-fpm/php7.4-fpm/" \${nginxFile}
+    a2dismod php8.1 &>/dev/null
+    a2enmod php7.4 &>/dev/null
+    systemctl restart nginx
+    echo "PHP 7.4 est maintenant activé sur apache nginx et en cli"
+  ;;
+  2)
+    sed -i "s/php7.4-fpm/php8.1/" \${nginxFile}
+    a2dismod php7.4 &>/dev/null
+    a2enmod php8.1 &>/dev/null
+    systemctl restart nginx
+    echo "PHP 8.1 est maintenant activé sur apache nginx et en cli"
+  ;;
+  "q"|"Q")
+    exit 0
+  ;;
+esac
+EOF
+  chmod +x /usr/local/bin/changephp
+}
+
 function installFinished () 
 {
 	clear
@@ -485,6 +520,10 @@ function installFinished ()
 	echo "Votre ip public:"
 	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
 	echo ""
+	echo "Pour changer de version de php entre 7.4 et 8.1"
+	echo "sur Nginx, Apache et ne ligne de commande executé la commande"
+	echo "changephp"
+	echo ""
 	echo ""
 }
 
@@ -496,9 +535,9 @@ main ()
   addLineSharedFstab
   syncSharedDirectory
   sslCertificateLocal
-  installPhp
   installApache2
   installNginx
+  installPhp
   installRuby
   installComposer
   installMariadb
