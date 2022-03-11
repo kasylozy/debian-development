@@ -492,7 +492,7 @@ case \$PHPCHOICE in
     echo "PHP 7.4 est maintenant activé sur apache nginx et en cli"
   ;;
   2)
-    sed -i "s/php7.4-fpm/php8.1/" \${nginxFile}
+    sed -i "s/php7.4-fpm/php8.1-fpm/" \${nginxFile}
     a2dismod php7.4 &>/dev/null
     a2enmod php8.1 &>/dev/null
     systemctl restart nginx
