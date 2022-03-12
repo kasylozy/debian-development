@@ -23,5 +23,7 @@ Deux raison peuvent être à l'origine
 Pour changer de version de php entré
 > changephp
 Vous serrez invité à changer de version de php pour le ( CLI : Ligne de commande ) nginx et apache
+
 en entrant 1 : vous changez pour php7.4
+
 en entrant 2 : vous changez pour php8.1
