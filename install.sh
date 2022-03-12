@@ -529,7 +529,7 @@ function installFinished ()
 	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
 	echo ""
 	echo "Pour changer de version de php entre 7.4 et 8.1"
-	echo "sur Nginx, Apache et ne ligne de commande executé la commande"
+	echo "sur Nginx, Apache et en ligne de commande executé la commande"
 	echo "changephp"
 	echo ""
 	echo ""
