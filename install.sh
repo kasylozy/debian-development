@@ -482,7 +482,7 @@ q : Ne pas changer de version
 Entrez votre choix : " PHPCHOICE
 
 nginxFile=/etc/nginx/conf.d/default.conf
-case $PHPCHOICE in
+case \$PHPCHOICE in
   1)
     echo "Changement pour php7.4 sur nginx"
     sed -i "s/php8.1-fpm/php7.4-fpm/" \${nginxFile}
