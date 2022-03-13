@@ -482,23 +482,28 @@ q : Ne pas changer de version
 Entrez votre choix : " PHPCHOICE
 
 nginxFile=/etc/nginx/conf.d/default.conf
-case \$PHPCHOICE in
+case $PHPCHOICE in
   1)
+    echo "Changement pour php7.4 sur nginx"
     sed -i "s/php8.1-fpm/php7.4-fpm/" \${nginxFile}
+    echo "Changement pour php7.4 sur apache2"
     a2disconf php8.1-fpm &>/dev/null
     a2enconf php7.4-fpm &>/dev/null
-    echo "PHP 7.4 à été activé en CLI, Nginx et Apache"
+    echo "Changement pour php7.4 en CLI"
+    update-alternatives --set php /usr/bin/php7.4 &>/dev/null
     systemctl restart nginx
     systemctl restart apache2
-    echo "PHP 7.4 est maintenant activé sur apache nginx et en cli"
-  ;;
+    ;;
   2)
+    echo "Changement pour php8.4 sur nginx"
     sed -i "s/php7.4-fpm/php8.1-fpm/" \${nginxFile}
+    echo "Changement pour php8.4 sur apache2"
     a2disconf php7.4-fpm &>/dev/null
     a2enconf php8.1-fpm &>/dev/null
+    echo "Changement pour php8.1 en CLI"
+    update-alternatives --set php /usr/bin/php8.1 &>/dev/null
     systemctl restart nginx
     systemctl restart apache2
-    echo "PHP 8.1 est maintenant activé sur apache nginx et en cli"
   ;;
   "q"|"Q")
     exit 0
