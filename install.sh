@@ -185,7 +185,6 @@ installPhp () {
 	php8.1-enchant \
 	php8.1-fpm \
 	php8.1-gd \
-	php8.1-gearman \
 	php8.1-gmp \
 	php8.1-gnupg \
 	php8.1-grpc \
@@ -210,7 +209,6 @@ installPhp () {
 	php8.1-oauth \
 	php8.1-odbc \
 	php8.1-opcache \
-	php8.1-pcov \
 	php8.1-pgsql \
 	php8.1-phpdbg \
 	php8.1-ps \
@@ -225,13 +223,10 @@ installPhp () {
 	php8.1-soap \
 	php8.1-sqlite3 \
 	php8.1-ssh2 \
-	php8.1-swoole \
 	php8.1-sybase \
 	php8.1-tidy \
-	php8.1-uopz \
 	php8.1-uploadprogress \
 	php8.1-uuid \
-	php8.1-vips \
 	php8.1-xdebug \
 	php8.1-xhprof \
 	php8.1-xml \
@@ -241,7 +236,7 @@ installPhp () {
 	php8.1-yaml \
 	php8.1-zip \
 	php8.1-zmq \
-	php8.1-zstd \
+	php8.1-zstd
 
    a2enmod proxy_fcgi setenvif && a2enconf php8.1-fpm
    systemctl restart apache2
