@@ -463,9 +463,10 @@ function configureMailDev () {
   fi
 }
 
-installNpm () {
+installNodeJs () {
   if [ ! -f "/usr/bin/npm" ]; then
-    apt install npm -y
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
   fi
 }
 
@@ -551,7 +552,7 @@ main ()
   installPostfix
   installDocker
   configureMailDev
-  installNpm
+  installNodeJs
   installFinished
   configureChangePhp
 }
