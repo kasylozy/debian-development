@@ -213,7 +213,6 @@ installPhp () {
 	php8.1-phpdbg \
 	php8.1-ps \
 	php8.1-pspell \
-	php8.1-psr \
 	php8.1-raphf \
 	php8.1-readline \
 	php8.1-redis \
