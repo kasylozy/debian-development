@@ -475,10 +475,12 @@ function configureMailDev () {
   fi
 }
 
-symfonyCli () {
-  echo 'deb [trusted=yes] https://repo.symfony.com/apt/ /' | tee /etc/apt/sources.list.d/symfony-cli.list
-  apt update
-  apt install symfony-cli
+function symfonyCli () {
+  if ! -f /usr/bin/symfony; then
+    echo 'deb [trusted=yes] https://repo.symfony.com/apt/ /' | tee /etc/apt/sources.list.d/symfony-cli.list
+    apt update
+    apt install symfony-cli
+  fi
 }
 
 configureChangePhp ()
