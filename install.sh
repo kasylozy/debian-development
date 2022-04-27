@@ -386,7 +386,7 @@ function installComposer ()
 {
   composerDirectory=/usr/local/bin/composer
   if [ ! -f "${composerDirectory}" ]; then
-    wget https://getcomposer.org/download/2.1.12/composer.phar
+    wget https://getcomposer.org/download/2.3.5/composer.phar
     mv composer.phar ${composerDirectory}
     chmod 777 ${composerDirectory}
   fi
