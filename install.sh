@@ -35,6 +35,13 @@ installRequirements ()
   fi
 }
 
+installNodeJs () {
+  if [ ! -f "/usr/bin/npm" ]; then
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt-get install -y nodejs
+  fi
+}
+
 configureVim ()
 {
   if ! grep -i "set number" /etc/vim/vimrc &>/dev/null;
@@ -463,13 +470,6 @@ function configureMailDev () {
   fi
 }
 
-installNodeJs () {
-  if [ ! -f "/usr/bin/npm" ]; then
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    apt-get install -y nodejs
-  fi
-}
-
 configureChangePhp ()
 {
   cat > /usr/local/bin/changephp <<EOF
@@ -539,6 +539,7 @@ main ()
 {
   configurationSSH
   installRequirements
+  installNodeJs
   configureVim
   addLineSharedFstab
   syncSharedDirectory
@@ -552,7 +553,6 @@ main ()
   installPostfix
   installDocker
   configureMailDev
-  installNodeJs
   installFinished
   configureChangePhp
 }
