@@ -475,6 +475,12 @@ function configureMailDev () {
   fi
 }
 
+symfonyCli () {
+  echo 'deb [trusted=yes] https://repo.symfony.com/apt/ /' | tee /etc/apt/sources.list.d/symfony-cli.list
+  apt update
+  apt install symfony-cli
+}
+
 configureChangePhp ()
 {
   cat > /usr/local/bin/changephp <<EOF
@@ -558,8 +564,9 @@ main ()
   installPostfix
   installDocker
   configureMailDev
-  installFinished
+  symfonyCli
   configureChangePhp
+  installFinished
 }
 
 main
