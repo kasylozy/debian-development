@@ -14,6 +14,10 @@ configurationSSH ()
 
 installRequirements ()
 {
+  if [ ! -f /usr/bin/curl ]; then
+    apt install -y curl
+  fi
+  
   if [ ! -f /etc/wgetrc ];
   then
     apt install -y wget
@@ -169,7 +173,7 @@ installPhp () {
   fi
 
   if [ ! -d /etc/php/8.1 ];then
-   apt-get install ca-certificates apt-transport-https software-properties-common wget curl lsb-release -y
+   apt-get install ca-certificates apt-transport-https software-properties-common wget lsb-release -y
    curl -sSL https://packages.sury.org/php/README.txt | bash -x  &>/dev/null
    apt update -y && apt full-upgrade -y
    apt install -y php8.1-fpm \
