@@ -43,6 +43,7 @@ installNodeJs () {
   if [ ! -f "/usr/bin/npm" ]; then
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     apt-get install -y nodejs
+    npm install -g npm@8.7.0
   fi
 }
 
