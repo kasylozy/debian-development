@@ -115,6 +115,13 @@ syncSharedDirectory () {
   fi
 }
 
+addLineSharedFstab () {
+  if ! grep -q ".host:/" /etc/fstab; then
+    apt install -y open-vm-{tools,tools-desktop}
+    echo ".host:/ /mnt/hgfs       fuse.vmhgfs-fuse        auto,allow_other        0       0" >> /etc/fstab
+  fi
+}
+
 sslCertificateLocal () {
   sslDirectory=/etc/ssl
   if [ ! -f "${sslDirectory}/dev.local.csr" ]; then
@@ -128,60 +135,65 @@ sslCertificateLocal () {
   fi
 }
 
-installPhp () {
-  if [ ! -d /etc/php/7.4/ ] ; then
-    apt install -y \
-      libapache2-mod-php7.4 \
-      libphp7.4-embed \
-      php7.4 \
-      php-zmq \
-      php7.4-bcmath \
-      php7.4-bz2 \
-      php7.4-cgi \
-      php7.4-cli \
-      php7.4-common \
-      php7.4-curl \
-      php7.4-dba \
-      php7.4-enchant \
-      php7.4-fpm \
-      php7.4-gd \
-      php7.4-gmp \
-      php7.4-imap \
-      php7.4-interbase \
-      php7.4-intl \
-      php7.4-json \
-      php7.4-ldap \
-      php7.4-mbstring \
-      php7.4-mysql \
-      php7.4-odbc \
-      php7.4-opcache \
-      php7.4-pgsql \
-      php7.4-phpdbg \
-      php7.4-pspell \
-      php7.4-readline \
-      php7.4-snmp \
-      php7.4-soap \
-      php7.4-sqlite3 \
-      php7.4-sybase \
-      php7.4-tidy \
-      php7.4-xml \
-      php7.4-xmlrpc \
-      php7.4-xsl \
-      php7.4-zip \
-      php-xdebug
+installSymfony () {
+  if [ ! -f /usr/bin/symfony ]; then
+     echo 'deb [trusted=yes] https://repo.symfony.com/apt/ /' | tee /etc/apt/sources.list.d/symfony-cli.list
+    apt update
+    apt install symfony-cli
+  fi
+}
 
-    systemctl restart apache2
+installPhp () {
+  apt install -y \
+    php7.4 \
+    php7.4-dev \
+    libapache2-mod-php7.4 \
+    libphp7.4-embed \
+    php7.4-bcmath \
+    php7.4-bz2 \
+    php7.4-cgi \
+    php7.4-cli \
+    php7.4-common \
+    php7.4-curl \
+    php7.4-dba \
+    php7.4-enchant \
+    php7.4-fpm \
+    php7.4-gd \
+    php7.4-gmp \
+    php7.4-imap \
+    php7.4-interbase \
+    php7.4-intl \
+    php7.4-json \
+    php7.4-ldap \
+    php7.4-mbstring \
+    php7.4-mysql \
+    php7.4-odbc \
+    php7.4-opcache \
+    php7.4-pgsql \
+    php7.4-phpdbg \
+    php7.4-pspell \
+    php7.4-readline \
+    php7.4-snmp \
+    php7.4-soap \
+    php7.4-sqlite3 \
+    php7.4-sybase \
+    php7.4-tidy \
+    php7.4-xml \
+    php7.4-xsl \
+    php7.4-zip \
+    php-xdebug   
+
+  if [ ! -f /etc/apt/sources.list.d/ ]; then
+    apt-get install ca-certificates apt-transport-https software-properties-common wget lsb-release -y
+    curl -sSL https://packages.sury.org/php/README.txt | bash -x  &>/dev/null
+    apt update -y && apt full-upgrade -y
   fi
 
-  if [ ! -d /etc/php/8.1 ];then
-   apt-get install ca-certificates apt-transport-https software-properties-common wget lsb-release -y
-   curl -sSL https://packages.sury.org/php/README.txt | bash -x  &>/dev/null
-   apt update -y && apt full-upgrade -y
-   apt install -y php8.1-fpm \
-	libapache2-mod-fcgid \
-	libapache2-mod-php8.1 \
-	libphp8.1-embed \
-	php8.1 \
+  apt install -y \
+    libapache2-mod-fcgid \
+    libapache2-mod-php8.1 \
+    libphp8.1-embed \
+    php8.1 \
 	php8.1-amqp \
 	php8.1-ast \
 	php8.1-bcmath \
@@ -234,7 +246,6 @@ installPhp () {
 	php8.1-soap \
 	php8.1-sqlite3 \
 	php8.1-ssh2 \
-	php8.1-sybase \
 	php8.1-tidy \
 	php8.1-uploadprogress \
 	php8.1-uuid \
@@ -249,19 +260,26 @@ installPhp () {
 	php8.1-zmq \
 	php8.1-zstd
 
-   a2enmod proxy_fcgi setenvif && a2enconf php8.1-fpm
-   systemctl restart apache2
-  fi
+
+  a2enmod proxy_fcgi setenvif && a2enconf php8.1-fpm
+  systemctl restart apache2
 
   for file in `find /etc/php -type f -name "php.ini"`; do
-		sed -i "s/error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT/error_reporting = E_ALL/" ${file}
-		sed -i "s/display_errors = Off/display_errors = On/" ${file}
-		sed -i "s/display_startup_errors = Off/display_startup_errors = On/" ${file}
-		sed -i "s/log_errors = On/log_errors = Off/" ${file}
-		sed -i "s/post_max_size = 8M/post_max_size = 8G/" ${file}
-		sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 8G/" ${file}
-		#sed -i "s/;extension=/extension=/" ${file}
-	done
+    sed -i "s/error_reporting = E_ALL & ~E_DEPRECATED & ~E_STRICT/error_reporting = E_ALL/" ${file}
+    sed -i "s/display_errors = Off/display_errors = On/" ${file}
+    sed -i "s/display_startup_errors = Off/display_startup_errors = On/" ${file}
+    sed -i "s/log_errors = On/log_errors = Off/" ${file}
+    sed -i "s/post_max_size = 8M/post_max_size = 8G/" ${file}
+    sed -i "s/upload_max_filesize = 2M/upload_max_filesize = 8G/" ${file}
+  done
+}
+
+installComposer () {
+  if [ ! -f /usr/local/bin/composer ]; then
+    wget https://getcomposer.org/download/2.3.5/composer.phar  
+    chmod +x composer.phar
+    mv composer.phar /usr/local/bin/composer
+  fi
 }
 
 installApache2 () {
@@ -387,17 +405,7 @@ installRuby ()
   fi
 }
 
-function installComposer () 
-{
-  composerDirectory=/usr/local/bin/composer
-  if [ ! -f "${composerDirectory}" ]; then
-    wget https://getcomposer.org/download/2.3.5/composer.phar
-    mv composer.phar ${composerDirectory}
-    chmod 777 ${composerDirectory}
-  fi
-}
-
-function installMariadb () 
+function installMariadb ()
 {
   if [ ! -f "/usr/bin/mysql" ]; then
     curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
@@ -414,7 +422,7 @@ function installMariadb ()
     mysql -uroot -proot -e "create user root@'%' identified by 'root';"
     mysql -uroot -proot -e "grant all privileges on *.* to root@'%';"
   fi
-	
+
   sed -i "s/127\.0\.0\.1/0\.0\.0\.0/" /etc/mysql/mariadb.conf.d/50-server.cnf
 
   systemctl restart mariadb
@@ -453,20 +461,19 @@ EOF
 }
 
 function installDocker () {
-	if [ ! -d "/etc/docker" ]; then
-		apt update
-		apt-get install \
-			ca-certificates \
-			curl \
-			gnupg \
-			lsb-release -y
-		curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-		echo \
-		"deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
-		$(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-		apt-get update
-		apt-get install docker-ce docker-ce-cli containerd.io -y
-	fi
+  if [ ! -d "/etc/docker" ]; then
+    apt update
+      apt-get install \
+      ca-certificates \
+      curl \
+      gnupg \
+      lsb-release -y
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+    $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get update
+    apt-get install docker-ce docker-ce-cli containerd.io -y
+  fi
 }
 
 function configureMailDev () {
@@ -476,7 +483,7 @@ function configureMailDev () {
 }
 
 function symfonyCli () {
-  if ! -f /usr/bin/symfony; then
+  if [ ! -f /usr/bin/symfony ]; then
     echo 'deb [trusted=yes] https://repo.symfony.com/apt/ /' | tee /etc/apt/sources.list.d/symfony-cli.list
     apt update
     apt install symfony-cli
@@ -487,13 +494,11 @@ configureChangePhp ()
 {
   cat > /usr/local/bin/changephp <<EOF
 #!/bin/bash
-
 read -p "Pour quel version de php voulez-vous changer ?
 1 : PHP 7.4
 2 : PHP 8.1
 q : Ne pas changer de version
 Entrez votre choix : " PHPCHOICE
-
 nginxFile=/etc/nginx/conf.d/default.conf
 case \$PHPCHOICE in
   1)
@@ -528,38 +533,39 @@ EOF
 
 function installFinished () 
 {
-	clear
-	echo ""
-	echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
-	echo "Apache port 80"
-	echo "Nginx port 8080"
-	echo "Nginx SSL port 8081"
-	echo "Maildev port 1080"
-	echo "Username mysql : root"
-	echo "Password mysql : root"
-	echo ""
-	echo "Votre ip public:"
-	ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
-	echo ""
-	echo "Pour changer de version de php entre 7.4 et 8.1"
-	echo "sur Nginx, Apache et en ligne de commande executé la commande"
-	echo "changephp"
-	echo ""
-	echo ""
+  clear
+  echo ""
+  echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
+  echo "Apache port 80"
+  echo "Nginx port 8080"
+  echo "Nginx SSL port 8081"
+  echo "Maildev port 1080"
+  echo "Username mysql : root"
+  echo "Password mysql : root"
+  echo ""
+  echo "Votre ip public:"
+  ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
+  echo ""
+  echo "Pour changer de version de php entre 7.4 et 8.1"
+  echo "sur Nginx, Apache et en ligne de commande executé la commande"
+  echo "changephp"
+  echo ""
+  echo ""
 }
 
-main ()
-{
+main () {
   configurationSSH
   installRequirements
   installNodeJs
   configureVim
-  addLineSharedFstab
   syncSharedDirectory
+  addLineSharedFstab
   sslCertificateLocal
+  installSymfony
+  installPhp
+  installComposer
   installApache2
   installNginx
-  installPhp
   installRuby
   installComposer
   installMariadb
