@@ -8,7 +8,7 @@ wget, git, vim, apache2, nginx, PHP 7.4, Ruby, Composer, Mariadb, Postfix, Docke
 >
 > Copiez-là ligne qui suit et collé la dans votre terminal puis tappez entrer
 ``` 
-apt install git -y; git clone https://github.com/kasylozy/debian-development.git; cd ./debian-development;./install.sh 
+apt install git -y; git clone https://github.com/kasylozy/debian-development.git; ./debian-development/./install.sh;rm -Rf ./debian-development
 ```
 
 ## Le script ne voit pas mon dossier partagé
