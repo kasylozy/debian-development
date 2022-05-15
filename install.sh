@@ -305,6 +305,10 @@ EOF
   <VirtualHost _default_:443>
   ServerAdmin webmaster@localhost
   DocumentRoot /var/www
+  <Directory /var/www>
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+  </Directory>
   ErrorLog ${APACHE_LOG_DIR}/error.log
   CustomLog ${APACHE_LOG_DIR}/access.log combined
   SSLEngine on
