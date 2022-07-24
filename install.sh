@@ -143,6 +143,55 @@ installSymfony () {
   fi
 }
 
+installApache2 () {
+  if [ ! -d "/etc/apache2" ]; then
+    apt install apache2 -y
+    rm -Rf /var/www/html
+    rm -f /etc/apache2/sites-available/000-default.conf
+    cat > /etc/apache2/sites-available/000-default.conf <<EOF
+<VirtualHost *:80>
+  #ServerName www.example.com
+  ServerAdmin webmaster@localhost
+  DocumentRoot /var/www
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+  <Directory /var/www>
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+  </Directory>
+</VirtualHost>
+EOF
+
+    cat > /etc/apache2/sites-available/default-ssl.conf <<EOF
+<IfModule mod_ssl.c>
+  <VirtualHost _default_:443>
+  ServerAdmin webmaster@localhost
+  DocumentRoot /var/www
+  <Directory /var/www>
+    Options +Indexes +FollowSymLinks
+    AllowOverride All
+  </Directory>
+  ErrorLog ${APACHE_LOG_DIR}/error.log
+  CustomLog ${APACHE_LOG_DIR}/access.log combined
+  SSLEngine on
+  SSLCertificateFile      /etc/ssl/dev.local.cert
+  SSLCertificateKeyFile /etc/ssl/dev.local.key
+  <FilesMatch "\.(cgi|shtml|phtml|php)$">
+    SSLOptions +StdEnvVars
+  </FilesMatch>
+  <Directory /usr/lib/cgi-bin>
+    SSLOptions +StdEnvVars
+  </Directory>
+  </VirtualHost>
+</IfModule>
+EOF
+    a2enmod rewrite
+    a2ensite default-ssl
+    a2enmod ssl
+  fi
+  systemctl stop apache2
+}
+
 installPhp () {
   apt install -y \
     php7.4 \
@@ -280,54 +329,6 @@ installComposer () {
     chmod +x composer.phar
     mv composer.phar /usr/local/bin/composer
   fi
-}
-
-installApache2 () {
-  if [ ! -d "/etc/apache2" ]; then
-    apt install apache2 -y
-    rm -Rf /var/www/html
-    cat > /etc/apache2/sites-available/000-default.conf <<EOF
-<VirtualHost *:80>
-  #ServerName www.example.com
-  ServerAdmin webmaster@localhost
-  DocumentRoot /var/www
-  ErrorLog ${APACHE_LOG_DIR}/error.log
-  CustomLog ${APACHE_LOG_DIR}/access.log combined
-  <Directory /var/www>
-    Options +Indexes +FollowSymLinks
-    AllowOverride All
-  </Directory>
-</VirtualHost>
-EOF
-
-    cat > /etc/apache2/sites-available/default-ssl.conf <<EOF
-<IfModule mod_ssl.c>
-  <VirtualHost _default_:443>
-  ServerAdmin webmaster@localhost
-  DocumentRoot /var/www
-  <Directory /var/www>
-    Options +Indexes +FollowSymLinks
-    AllowOverride All
-  </Directory>
-  ErrorLog ${APACHE_LOG_DIR}/error.log
-  CustomLog ${APACHE_LOG_DIR}/access.log combined
-  SSLEngine on
-  SSLCertificateFile      /etc/ssl/dev.local.cert
-  SSLCertificateKeyFile /etc/ssl/dev.local.key
-  <FilesMatch "\.(cgi|shtml|phtml|php)$">
-    SSLOptions +StdEnvVars
-  </FilesMatch>
-  <Directory /usr/lib/cgi-bin>
-    SSLOptions +StdEnvVars
-  </Directory>
-  </VirtualHost>
-</IfModule>
-EOF
-    a2enmod rewrite
-    a2ensite default-ssl
-    a2enmod ssl
-  fi
-  systemctl stop apache2
 }
 
 installNginx () {
@@ -566,9 +567,9 @@ main () {
   addLineSharedFstab
   sslCertificateLocal
   installSymfony
+  installApache2
   installPhp
   installComposer
-  installApache2
   installNginx
   installRuby
   installComposer
