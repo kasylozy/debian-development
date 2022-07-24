@@ -413,11 +413,17 @@ installRuby ()
 function installMariadb ()
 {
   if [ ! -f "/usr/bin/mysql" ]; then
-    curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
-    apt-get install -y software-properties-common
-    add-apt-repository 'deb [arch=amd64,arm64,ppc64el] http://sfo1.mirrors.digitalocean.com/mariadb/repo/10.3/ubuntu bionic main'
-    apt update
-    apt install -y mariadb-{server,client,backup,common}
+    sudo apt-get install apt-transport-https curl
+    sudo curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc'
+    sudo sh -c "echo 'deb https://ftp.osuosl.org/pub/mariadb/repo/10.8/debian bullseye main' >>/etc/apt/sources.list"
+    sudo apt-get update
+    sudo apt-get install {server,client,backup,common}
+    
+    #curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
+    #apt-get install -y software-properties-common
+    #add-apt-repository 'deb [arch=amd64,arm64,ppc64el] http://sfo1.mirrors.digitalocean.com/mariadb/repo/10.3/ubuntu bionic main'
+    #apt update
+    #apt install -y mariadb-{server,client,backup,common}
   fi
 
   check=`mysql -uroot -proot -e "select host from mysql.user where user='root' and host='%';"`
