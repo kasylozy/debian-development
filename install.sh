@@ -417,7 +417,7 @@ function installMariadb ()
     sudo curl -o /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc 'https://mariadb.org/mariadb_release_signing_key.asc'
     sudo sh -c "echo 'deb https://ftp.osuosl.org/pub/mariadb/repo/10.8/debian bullseye main' >>/etc/apt/sources.list"
     sudo apt-get update
-    sudo apt-get install {server,client,backup,common}
+    sudo apt-get install mariadb-{server,client,backup,common} -y
     
     #curl -sS https://downloads.mariadb.com/MariaDB/mariadb_repo_setup | bash
     #apt-get install -y software-properties-common
