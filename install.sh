@@ -162,6 +162,7 @@ installApache2 () {
 </VirtualHost>
 EOF
 
+     rm -f /etc/apache2/sites-available/default-ssl.conf
     cat > /etc/apache2/sites-available/default-ssl.conf <<EOF
 <IfModule mod_ssl.c>
   <VirtualHost _default_:443>
