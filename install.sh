@@ -3,7 +3,7 @@ set -e
 
 clear
 
-configurationSSH ()
+function configurationSSH ()
 {
   if grep "PermitRootLogin prohibit-password" /etc/ssh/sshd_config &>/dev/null;
   then
@@ -12,7 +12,7 @@ configurationSSH ()
   fi
 }
 
-installRequirements ()
+function installRequirements ()
 {
   if [ ! -f /usr/bin/curl ]; then
     apt install -y curl
@@ -39,7 +39,7 @@ installRequirements ()
   fi
 }
 
-installNodeJs () {
+function installNodeJs () {
   if [ ! -f "/usr/bin/npm" ]; then
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     apt-get install -y nodejs
@@ -47,78 +47,12 @@ installNodeJs () {
   fi
 }
 
-configureVim ()
+function configureVim ()
 {
   if ! grep -i "set number" /etc/vim/vimrc &>/dev/null;
   then
     apt install -y vim
     echo "set number" >> /etc/vim/vimrc
-  fi
-}
-
-addLineSharedFstab () {
-  if ! grep -q ".host:/" /etc/fstab; then
-    apt install -y open-vm-{tools,tools-desktop}
-    echo ".host:/ /mnt/hgfs       fuse.vmhgfs-fuse        auto,allow_other        0       0" >> /etc/fstab
-  fi
-}
-
-sharedMissingFolders () {
-  clear
-  echo -e "Vous devez ajouter au moin un dossier partagé\n"
-  exit 0
-}
-
-endScriptErrorSharedFolders () {
-  clear
-  echo -e "Le script ces arrêté puis que le dossier demander n'existe pas
-Vérifié la saisie et relancé le script de nouveau
-"
-exit 0
-}
-
-syncSharedDirectory () {
-  directoryWeb=/var/www
-  directoryShared=`ls /mnt/ | wc -l`
-  hgfs=/mnt/hgfs
-  if [ $directoryShared -eq 0 ]; then
-    sharedMissingFolders
-  fi
-
-  declare -a indexShareDirectory
-  indexCount=0
-  countSharedDirectory=`ls /mnt/hgfs/ | wc -l`
-  if [ $countSharedDirectory -gt 1 ]; then
-    clear
-    echo -e "Voici la liste de vos dossier partagé avec leur position"
-    for folder in `ls /mnt/hgfs`; do
-      echo "${indexCount} : ${folder}"
-      indexShareDirectory[$indexCount]=$folder
-      indexCount=${indexCount+1}
-    done
-
-    read -p "Entrez le numéro du dossier web : " SHAREDCHOICE
-    if ! echo $SHAREDCHOICE | grep -x -E '[[:digit:]]+' &>/dev/null; then
-      endScriptErrorSharedFolders
-    else
-      if [ "${SHAREDCHOICE}" -le "${indexCount}" ]; then
-        rm -Rf ${directoryWeb}
-        ln -s /mnt/hgfs/${indexShareDirectory[$SHAREDCHOICE]} ${directoryWeb}
-      else
-        endScriptErrorSharedFolders
-      fi
-    fi
-  else
-    directoryAsShared=`ls /mnt/hgfs`
-    rm -Rf ${directoryWeb}
-    ln -s /mnt/hgfs/${directoryAsShared} ${directoryWeb}
-  fi
-}
-
-addLineSharedFstab () {
-  if ! grep -q ".host:/" /etc/fstab; then
-    apt install -y open-vm-{tools,tools-desktop}
-    echo ".host:/ /mnt/hgfs       fuse.vmhgfs-fuse        auto,allow_other        0       0" >> /etc/fstab
   fi
 }
 
@@ -143,7 +77,7 @@ installSymfony () {
   fi
 }
 
-installApache2 () {
+function installApache2 () {
   if [ ! -d "/etc/apache2" ]; then
     apt install apache2 -y
     rm -Rf /var/www/html
@@ -565,13 +499,34 @@ function installFinished ()
   echo ""
 }
 
+function installSamba ()
+{
+	apt install samba smbclient cifs-utils -y
+	fileShare=/etc/samba/smb.conf
+	if ! grep -e "\[website\]" $fileShare &>/dev/null; then
+		cat >> $fileShare <<EOF
+
+[website]
+   comment = Public Folder
+   path = /srv
+   writable = yes
+   guest ok = yes
+   guest only = yes
+   force create mode = 775
+   force directory mode = 775
+EOF
+	fi
+	groupadd smbshare
+	chgrp -R smbshare /srv
+	chmod 777 -R /srv
+	systemctl restart nmbd
+}
+
 main () {
   configurationSSH
   installRequirements
   installNodeJs
   configureVim
-  syncSharedDirectory
-  addLineSharedFstab
   sslCertificateLocal
   installSymfony
   installApache2
@@ -587,6 +542,7 @@ main () {
   symfonyCli
   configureChangePhp
   installFinished
+  installSamba
 }
 
 main
