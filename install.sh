@@ -80,7 +80,7 @@ installSymfony () {
 function installApache2 () {
   if [ ! -d "/etc/apache2" ]; then
     apt install apache2 -y
-    rm -Rf /var/www/html
+    rm -Rf /srv
     rm -f /etc/apache2/sites-available/000-default.conf
     cat > /etc/apache2/sites-available/000-default.conf <<EOF
 <VirtualHost *:80>
@@ -89,7 +89,7 @@ function installApache2 () {
   DocumentRoot /var/www
   ErrorLog ${APACHE_LOG_DIR}/error.log
   CustomLog ${APACHE_LOG_DIR}/access.log combined
-  <Directory /var/www>
+  <Directory /srv>
     Options +Indexes +FollowSymLinks
     AllowOverride All
   </Directory>
@@ -314,7 +314,7 @@ server {
   ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
   ssl_ciphers         HIGH:!aNULL:!MD5;
   server_name  localhost;
-  root /var/www;
+  root /srv;
   index index.php index.html index.htm;
   autoindex on;
   location / {
