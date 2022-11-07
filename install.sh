@@ -478,28 +478,6 @@ EOF
   chmod +x /usr/local/bin/changephp
 }
 
-function installFinished () 
-{
-  clear
-  echo ""
-  echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
-  echo "Apache port 80"
-  echo "Nginx port 8080"
-  echo "Nginx SSL port 8081"
-  echo "Maildev port 1080"
-  echo "Username mysql : root"
-  echo "Password mysql : root"
-  echo ""
-  echo "Votre ip public:"
-  ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
-  echo ""
-  echo "Pour changer de version de php entre 7.4 et 8.1"
-  echo "sur Nginx, Apache et en ligne de commande executé la commande"
-  echo "changephp"
-  echo ""
-  echo ""
-}
-
 function installSamba ()
 {
 	apt install samba smbclient cifs-utils -y
@@ -523,6 +501,28 @@ EOF
 	systemctl restart nmbd
 }
 
+function installFinished () 
+{
+  clear
+  echo ""
+  echo "L'installation est terminée vous pouvez utiliser votre serveur de développement"
+  echo "Apache port 80"
+  echo "Nginx port 8080"
+  echo "Nginx SSL port 8081"
+  echo "Maildev port 1080"
+  echo "Username mysql : root"
+  echo "Password mysql : root"
+  echo ""
+  echo "Votre ip public:"
+  ifconfig ens33 | awk '/inet / {print $2}' | cut -d ':' -f2
+  echo ""
+  echo "Pour changer de version de php entre 7.4 et 8.1"
+  echo "sur Nginx, Apache et en ligne de commande executé la commande"
+  echo "changephp"
+  echo ""
+  echo ""
+}
+
 main () {
   configurationSSH
   installRequirements
@@ -542,8 +542,8 @@ main () {
   configureMailDev
   symfonyCli
   configureChangePhp
-  installFinished
   installSamba
+  installFinished
 }
 
 main
