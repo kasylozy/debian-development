@@ -47,6 +47,18 @@ installNodeJs () {
   fi
 }
 
+configureNpm () {
+  bashrc=~/.bashrc
+  if ! grep ! -i "alias npm='npm --no-bin-links'" $bashrc &>/dev/nullk;
+  then
+    cat > ~/.bashrc << EOF
+alias ll='ls -lha'
+alias npm='npm --no-bin-links'
+EOF
+    . ~/.bashrc
+  fi
+}
+
 configureVim ()
 {
   if ! grep -i "set number" /etc/vim/vimrc &>/dev/null;
@@ -569,6 +581,7 @@ main () {
   configurationSSH
   installRequirements
   installNodeJs
+  configureNpm
   configureVim
   syncSharedDirectory
   addLineSharedFstab
