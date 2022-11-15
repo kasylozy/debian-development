@@ -3,7 +3,7 @@ set -e
 
 clear
 
-function configurationSSH ()
+configurationSSH ()
 {
   if grep "PermitRootLogin prohibit-password" /etc/ssh/sshd_config &>/dev/null;
   then
@@ -12,7 +12,7 @@ function configurationSSH ()
   fi
 }
 
-function installRequirements ()
+installRequirements ()
 {
   if [ ! -f /usr/bin/curl ]; then
     apt install -y curl
@@ -39,7 +39,7 @@ function installRequirements ()
   fi
 }
 
-function installNodeJs () {
+installNodeJs () {
   if [ ! -f "/usr/bin/npm" ]; then
     curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
     apt-get install -y nodejs
@@ -47,12 +47,78 @@ function installNodeJs () {
   fi
 }
 
-function configureVim ()
+configureVim ()
 {
   if ! grep -i "set number" /etc/vim/vimrc &>/dev/null;
   then
     apt install -y vim
     echo "set number" >> /etc/vim/vimrc
+  fi
+}
+
+addLineSharedFstab () {
+  if ! grep -q ".host:/" /etc/fstab; then
+    apt install -y open-vm-{tools,tools-desktop}
+    echo ".host:/ /mnt/hgfs       fuse.vmhgfs-fuse        auto,allow_other        0       0" >> /etc/fstab
+  fi
+}
+
+sharedMissingFolders () {
+  clear
+  echo -e "Vous devez ajouter au moin un dossier partagé\n"
+  exit 0
+}
+
+endScriptErrorSharedFolders () {
+  clear
+  echo -e "Le script ces arrêté puis que le dossier demander n'existe pas
+Vérifié la saisie et relancé le script de nouveau
+"
+exit 0
+}
+
+syncSharedDirectory () {
+  directoryWeb=/var/www
+  directoryShared=`ls /mnt/ | wc -l`
+  hgfs=/mnt/hgfs
+  if [ $directoryShared -eq 0 ]; then
+    sharedMissingFolders
+  fi
+
+  declare -a indexShareDirectory
+  indexCount=0
+  countSharedDirectory=`ls /mnt/hgfs/ | wc -l`
+  if [ $countSharedDirectory -gt 1 ]; then
+    clear
+    echo -e "Voici la liste de vos dossier partagé avec leur position"
+    for folder in `ls /mnt/hgfs`; do
+      echo "${indexCount} : ${folder}"
+      indexShareDirectory[$indexCount]=$folder
+      indexCount=${indexCount+1}
+    done
+
+    read -p "Entrez le numéro du dossier web : " SHAREDCHOICE
+    if ! echo $SHAREDCHOICE | grep -x -E '[[:digit:]]+' &>/dev/null; then
+      endScriptErrorSharedFolders
+    else
+      if [ "${SHAREDCHOICE}" -le "${indexCount}" ]; then
+        rm -Rf ${directoryWeb}
+        ln -s /mnt/hgfs/${indexShareDirectory[$SHAREDCHOICE]} ${directoryWeb}
+      else
+        endScriptErrorSharedFolders
+      fi
+    fi
+  else
+    directoryAsShared=`ls /mnt/hgfs`
+    rm -Rf ${directoryWeb}
+    ln -s /mnt/hgfs/${directoryAsShared} ${directoryWeb}
+  fi
+}
+
+addLineSharedFstab () {
+  if ! grep -q ".host:/" /etc/fstab; then
+    apt install -y open-vm-{tools,tools-desktop}
+    echo ".host:/ /mnt/hgfs       fuse.vmhgfs-fuse        auto,allow_other        0       0" >> /etc/fstab
   fi
 }
 
@@ -77,21 +143,21 @@ installSymfony () {
   fi
 }
 
-function installApache2 () {
+installApache2 () {
   if [ ! -d "/etc/apache2" ]; then
     apt install apache2 -y
+    rm -Rf /var/www/html
     rm -f /etc/apache2/sites-available/000-default.conf
     cat > /etc/apache2/sites-available/000-default.conf <<EOF
 <VirtualHost *:80>
   #ServerName www.example.com
   ServerAdmin webmaster@localhost
-  DocumentRoot /srv
+  DocumentRoot /var/www
   ErrorLog ${APACHE_LOG_DIR}/error.log
   CustomLog ${APACHE_LOG_DIR}/access.log combined
-  <Directory /srv>
+  <Directory /var/www>
     Options +Indexes +FollowSymLinks
     AllowOverride All
-    require all granted
   </Directory>
 </VirtualHost>
 EOF
@@ -101,11 +167,10 @@ EOF
 <IfModule mod_ssl.c>
   <VirtualHost _default_:443>
   ServerAdmin webmaster@localhost
-  DocumentRoot /srv
-  <Directory /srv>
+  DocumentRoot /var/www
+  <Directory /var/www>
     Options +Indexes +FollowSymLinks
     AllowOverride All
-    require all granted
   </Directory>
   ErrorLog ${APACHE_LOG_DIR}/error.log
   CustomLog ${APACHE_LOG_DIR}/access.log combined
@@ -315,7 +380,7 @@ server {
   ssl_protocols       TLSv1 TLSv1.1 TLSv1.2;
   ssl_ciphers         HIGH:!aNULL:!MD5;
   server_name  localhost;
-  root /srv;
+  root /var/www;
   index index.php index.html index.htm;
   autoindex on;
   location / {
@@ -478,29 +543,6 @@ EOF
   chmod +x /usr/local/bin/changephp
 }
 
-function installSamba ()
-{
-	apt install samba smbclient cifs-utils -y
-	fileShare=/etc/samba/smb.conf
-	if ! grep -e "\[website\]" $fileShare &>/dev/null; then
-		cat >> $fileShare <<EOF
-
-[website]
-   comment = Public Folder
-   path = /srv
-   writable = yes
-   guest ok = yes
-   guest only = yes
-   force create mode = 775
-   force directory mode = 775
-EOF
-	fi
-	groupadd smbshare
-	chgrp -R smbshare /srv
-	chmod 777 -R /srv
-	systemctl restart nmbd
-}
-
 function installFinished () 
 {
   clear
@@ -528,6 +570,8 @@ main () {
   installRequirements
   installNodeJs
   configureVim
+  syncSharedDirectory
+  addLineSharedFstab
   sslCertificateLocal
   installSymfony
   installApache2
@@ -542,7 +586,6 @@ main () {
   configureMailDev
   symfonyCli
   configureChangePhp
-  installSamba
   installFinished
 }
 
