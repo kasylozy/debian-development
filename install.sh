@@ -311,7 +311,6 @@ installPhp () {
 	php8.2-uploadprogress \
 	php8.2-uuid \
 	php8.2-xdebug \
-	php8.2-xhprof \
 	php8.2-xml \
 	php8.2-xmlrpc \
 	php8.2-xsl \
