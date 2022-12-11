@@ -322,7 +322,7 @@ installPhp () {
 	php8.2-zstd
 
 
-  a2enmod proxy_fcgi setenvif && a2enconf php8.1-fpm
+  a2enmod proxy_fcgi setenvif && a2enconf php8.2-fpm
   systemctl restart apache2
 
   for file in `find /etc/php -type f -name "php.ini"`; do
